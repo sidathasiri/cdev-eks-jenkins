@@ -1,0 +1,52 @@
+_p: &provider_aws
+  - aws:
+      region: {{ .variables.region }}
+
+name: cdev-sonarqube
+kind: StackTemplate
+units:
+  - name: vpc
+    type: tfmodule
+    providers: *provider_aws
+    source: terraform-aws-modules/vpc/aws
+    inputs:
+      name: 'eks-vpc'
+      cidr: '10.0.0.0/16'
+      azs: ['us-east-1a', 'us-east-1b']
+      private_subnets: ['10.0.1.0/24', '10.0.2.0/24']
+      public_subnets: ['10.0.101.0/24', '10.0.102.0/24']
+      enable_nat_gateway: true
+      enable_vpn_gateway: false
+  - name: eks-cluster
+    type: tfmodule
+    providers: *provider_aws
+    source: terraform-aws-modules/eks/aws
+    inputs:
+      cluster_name: 'my-cluster'
+      cluster_version: '1.29'
+      cluster_endpoint_public_access: true
+      vpc_id: {{ remoteState "this.vpc.vpc_id" }}
+      subnet_ids: {{ remoteState "this.vpc.private_subnets" }}
+      control_plane_subnet_ids: {{ remoteState "this.vpc.public_subnets" }}
+      enable_cluster_creator_admin_permissions: true
+      cluster_addons:
+        coredns:
+          most_recent: true
+        kube-proxy:
+          most_recent: true
+        vpc-cni:
+          most_recent: true
+      eks_managed_node_group_defaults:
+        instance_types:
+          - 'm6i.large'
+          - 'm5.large'
+          - 'm5n.large'
+          - 'm5zn.large'
+      eks_managed_node_groups:
+        node-group:
+          min_size: 1
+          max_size: 10
+          desired_size: 1
+          instance_types:
+            - 't3.large'
+          capacity_type: 'SPOT'

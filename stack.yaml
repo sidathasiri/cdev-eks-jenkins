@@ -1,0 +1,6 @@
+name: cdev-eks
+template: ./template/
+kind: Stack
+backend: aws-backend
+variables:
+  region: {{ .project.variables.region }}
