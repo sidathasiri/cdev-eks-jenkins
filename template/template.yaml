@@ -17,7 +17,7 @@ units:
       public_subnets: ['10.0.101.0/24', '10.0.102.0/24']
       enable_nat_gateway: true
       enable_vpn_gateway: false
-  - name: eks-cluster
+  - name: eksCluster
     type: tfmodule
     providers: *provider_aws
     source: terraform-aws-modules/eks/aws
@@ -36,6 +36,8 @@ units:
           most_recent: true
         vpc-cni:
           most_recent: true
+        aws-ebs-csi-driver:
+          most_recent: true
       eks_managed_node_group_defaults:
         instance_types:
           - 'm6i.large'
@@ -50,3 +52,21 @@ units:
           instance_types:
             - 't3.large'
           capacity_type: 'SPOT'
+          iam_role_additional_policies:
+            additional: 'arn:aws:iam::aws:policy/AmazonEC2FullAccess'
+  - name: kubeconfig
+    type: shell
+    depends_on: this.eksCluster
+    force_apply: true
+    apply:
+      commands:
+        - aws eks update-kubeconfig --region us-east-1 --name my-cluster
+  - name: jenkins
+    type: helm
+    kubeconfig: ~/.kube/config
+    source:
+      repository: 'https://charts.jenkins.io'
+      chart: 'jenkins'
+      version: '5.0.13'
+    values:
+        - file: ./helm/values.yaml
