@@ -1,6 +1,9 @@
-name: cdev-eks
+name: cdev-eks-jenkins
 template: ./template/
 kind: Stack
 backend: aws-backend
 variables:
   region: {{ .project.variables.region }}
+  cluster_name: {{ .project.variables.cluster_name }}
+  vpc_name: {{ .project.variables.vpc_name }}
+  eks_version: {{ .project.variables.eks_version }}

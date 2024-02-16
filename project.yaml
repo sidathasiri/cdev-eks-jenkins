@@ -5,3 +5,6 @@ variables:
   organization: my-org
   region: us-east-1
   state_bucket_name: cluster-dev-state
+  cluster_name: my-cluster
+  eks_version: '1.29'
+  vpc_name: 'eks-jenkins-vpc'

@@ -2,7 +2,7 @@ _p: &provider_aws
   - aws:
       region: {{ .variables.region }}
 
-name: cdev-sonarqube
+name: cdev-eks-jenkins
 kind: StackTemplate
 units:
   - name: vpc
@@ -10,7 +10,7 @@ units:
     providers: *provider_aws
     source: terraform-aws-modules/vpc/aws
     inputs:
-      name: 'eks-vpc'
+      name: {{ .variables.vpc_name }}
       cidr: '10.0.0.0/16'
       azs: ['us-east-1a', 'us-east-1b']
       private_subnets: ['10.0.1.0/24', '10.0.2.0/24']
@@ -22,8 +22,8 @@ units:
     providers: *provider_aws
     source: terraform-aws-modules/eks/aws
     inputs:
-      cluster_name: 'my-cluster'
-      cluster_version: '1.29'
+      cluster_name: {{ .variables.cluster_name }}
+      cluster_version: {{ .variables.eks_version }}
       cluster_endpoint_public_access: true
       vpc_id: {{ remoteState "this.vpc.vpc_id" }}
       subnet_ids: {{ remoteState "this.vpc.private_subnets" }}
@@ -60,9 +60,10 @@ units:
     force_apply: true
     apply:
       commands:
-        - aws eks update-kubeconfig --region us-east-1 --name my-cluster
+        - aws eks update-kubeconfig --region {{ .variables.region }} --name {{ .variables.cluster_name }}
   - name: jenkins
     type: helm
+    depends_on: this.kubeconfig
     kubeconfig: ~/.kube/config
     source:
       repository: 'https://charts.jenkins.io'
